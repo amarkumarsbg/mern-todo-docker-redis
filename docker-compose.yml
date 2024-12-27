@@ -1,0 +1,53 @@
+version: "3.8"
+
+name: mernapp
+
+services:
+  mongo:
+    image: mongo:6
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - mernapp
+
+  backend:
+    build:
+      context: ./backend # Points to the backend folder
+      dockerfile: Dockerfile # Use the Dockerfile in the backend folder
+    env_file:
+      - ./backend/.env # Make sure the .env file is correctly set
+    volumes:
+      - ./backend:/server
+      - /server/node_modules
+    networks:
+      - mernapp
+    ports:
+      - "3000:3000" # Map container's 3000 port to 3000 on host
+    depends_on:
+      - mongo
+    command: npm run dev # Ensure the dev script is in your package.json
+
+  frontend:
+    build:
+      context: ./frontend # Points to the frontend folder
+      dockerfile: Dockerfile # Use the Dockerfile in the frontend folder
+    ports:
+      - "5173:5173" # Expose frontend port
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - mernapp
+    command: npm run dev -- --host 0.0.0.0 # Make the frontend accessible externally
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
+
+networks:
+  mernapp:
+    driver: bridge
